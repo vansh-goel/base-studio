@@ -84,6 +84,23 @@ The platform includes several smart contracts deployed on Base:
 - **ExperienceNFT**: Track user achievements and XP
 - **UniswapV3Liquidity**: Create and manage liquidity pools
 
+### Base Network Configuration
+- NEXT_PUBLIC_CHAIN_ID=84532
+- NEXT_PUBLIC_RPC_URL=https://sepolia.base.org
+
+### Contract Addresses
+
+- **MemeTokenFactory**: `0x46474bd5bd7da8c2c6cc993f54e676efc4ec6740`
+- **ExperienceNFT**: `0x917f0724a66e7928bc990b0d73d3ebe8e1392043`
+- **UniswapV3Liquidity**: `0x25dee68c6b7dfa9ef1bb4c54efe0582728cf372c`
+
+### Successful Transactions on Base
+
+- [Transaction: 0xfd2e376eb38b2bad152e7caf068dbde50f9ca10f35a05f1ccb9f14f6823a30a5](https://sepolia.basescan.org/tx/0xfd2e376eb38b2bad152e7caf068dbde50f9ca10f35a05f1ccb9f14f6823a30a5)
+- [Contract: 0x46474bd5bd7da8c2c6cc993f54e676efc4ec6740](https://sepolia.basescan.org/address/0x46474bd5bd7da8c2c6cc993f54e676efc4ec6740)
+- [Contract: 0x917f0724a66e7928bc990b0d73d3ebe8e1392043](https://sepolia.basescan.org/address/0x917f0724a66e7928bc990b0d73d3ebe8e1392043)
+- [Contract: 0x25dee68c6b7dfa9ef1bb4c54efe0582728cf372c](https://sepolia.basescan.org/address/0x25dee68c6b7dfa9ef1bb4c54efe0582728cf372c)
+
 ## Development
 
 ### Project Structure
