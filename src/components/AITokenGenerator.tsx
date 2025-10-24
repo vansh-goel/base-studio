@@ -28,6 +28,7 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
     const [isGenerating, setIsGenerating] = useState(false);
     const [metadata, setMetadata] = useState<TokenMetadata | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
     const { writeContract, data: hash, isPending } = useWriteContract();
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
@@ -44,6 +45,36 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
             const base64Data = imageUrl.split(',')[1];
 
             console.log('Generating metadata for image...');
+
+            // First, test IPFS upload to see if it's working
+            console.log('Testing IPFS upload...');
+            try {
+                const uploadResponse = await fetch('/api/mint-nft', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        imageBase64: imageUrl,
+                        name: 'Test Upload',
+                        description: 'Testing IPFS upload during metadata generation',
+                        attributes: [
+                            { trait_type: "Test", value: "Metadata Generation" }
+                        ]
+                    }),
+                });
+
+                if (uploadResponse.ok) {
+                    const uploadResult = await uploadResponse.json();
+                    console.log('✅ IPFS upload successful during metadata generation:', uploadResult);
+                    console.log('Image URL from IPFS:', uploadResult.imageUrl);
+                } else {
+                    const errorData = await uploadResponse.json();
+                    console.error('❌ IPFS upload failed during metadata generation:', errorData);
+                }
+            } catch (uploadError) {
+                console.error('❌ IPFS upload error during metadata generation:', uploadError);
+            }
 
             // Call OpenAI API to analyze the image and generate token metadata
             const response = await fetch('/api/generate-token-metadata', {
@@ -90,22 +121,67 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
             console.log('Creating token with metadata:', metadata);
             console.log('Contract address:', contractAddresses.memeTokenFactory);
 
+            // Upload the actual edited image to IPFS via Lighthouse
+            setStatusMessage("Uploading your edited image to IPFS...");
+
+            const imageResponse = await fetch('/api/mint-nft', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    imageBase64: imageUrl,
+                    name: metadata.name,
+                    description: metadata.description,
+                    attributes: [
+                        { trait_type: "Token Symbol", value: metadata.symbol },
+                        { trait_type: "Created By", value: "Base Studio" }
+                    ]
+                }),
+            });
+
+            let finalImageUrl;
+
+            if (!imageResponse.ok) {
+                const errorData = await imageResponse.json();
+                console.error('IPFS upload failed:', errorData);
+                throw new Error(`IPFS upload failed: ${errorData.error || 'Unknown error'}`);
+            } else {
+                const imageResult = await imageResponse.json();
+                console.log('Image uploaded to IPFS:', imageResult);
+                finalImageUrl = imageResult.imageUrl;
+                setStatusMessage("Image uploaded successfully to IPFS!");
+            }
+
+            console.log('Final image URL:', finalImageUrl);
+
+            // Now create the token with the real IPFS image URL
+            setStatusMessage("Creating token on blockchain...");
+
+            const contractArgs = [
+                metadata.name,
+                metadata.symbol,
+                metadata.description,
+                finalImageUrl, // Use the IPFS URL or fallback placeholder
+                metadata.twitter,
+                metadata.telegram,
+                metadata.website
+            ];
+
+            console.log('Contract arguments:', contractArgs);
+            console.log('Image URL being passed to contract:', finalImageUrl);
+
             await writeContract({
                 address: contractAddresses.memeTokenFactory as `0x${string}`,
                 abi: MEME_TOKEN_FACTORY_ABI,
                 functionName: 'createToken',
-                args: [
-                    metadata.name,
-                    metadata.symbol,
-                    metadata.description,
-                    "https://via.placeholder.com/400x400/6366f1/ffffff?text=" + encodeURIComponent(metadata.symbol), // Use placeholder instead of large base64
-                    metadata.twitter,
-                    metadata.telegram,
-                    metadata.website
-                ],
+                args: contractArgs,
             });
+
+            setStatusMessage("Token created successfully!");
         } catch (error) {
             console.error('Error creating token:', error);
+            setStatusMessage("Failed to create token. Please try again.");
         }
     };
 
@@ -263,6 +339,12 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
                             <p className="text-sm truncate">{metadata.website}</p>
                         </div>
                     </div>
+
+                    {statusMessage && (
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <p className="text-sm text-blue-800 dark:text-blue-200">{statusMessage}</p>
+                        </div>
+                    )}
 
                     <div className="flex gap-2">
                         <Button

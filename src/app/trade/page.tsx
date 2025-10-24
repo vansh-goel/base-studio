@@ -150,7 +150,9 @@ export default function TradePage() {
   useEffect(() => {
     const fetchTokenDetails = async () => {
       try {
+        console.log('🔍 Fetching token details...');
         const tokenDetails = await fetchAllTokens();
+        console.log('📋 Fetched tokens:', tokenDetails);
         setTokens(tokenDetails);
       } catch (error) {
         console.error('Error fetching tokens:', error);
@@ -244,13 +246,39 @@ export default function TradePage() {
                           ? 'border-primary bg-primary/5 shadow-lg'
                           : 'border-border hover:border-primary/50 hover:bg-muted/50'
                           }`}
-                        onClick={() => setSelectedToken(token)}
+                        onClick={() => {
+                          // Toggle selection on mobile - if same token is clicked, deselect it
+                          if (selectedToken?.address === token.address) {
+                            setSelectedToken(null);
+                          } else {
+                            setSelectedToken(token);
+                          }
+                        }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl gradient-base flex items-center justify-center">
-                            <span className="font-bold text-white">{token.symbol.slice(0, 2)}</span>
+                          <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-muted">
+                            {token.image && token.image !== '' ? (
+                              <img
+                                src={token.image}
+                                alt={token.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // Fallback to initials if image fails to load
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const fallback = target.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className="w-full h-full gradient-base flex items-center justify-center"
+                              style={{ display: (token.image && token.image !== '') ? 'none' : 'flex' }}
+                            >
+                              <span className="font-bold text-white">{token.symbol.slice(0, 2)}</span>
+                            </div>
                           </div>
                           <div className="flex-1">
                             <h3 className="font-semibold">{token.name}</h3>
@@ -292,27 +320,65 @@ export default function TradePage() {
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.4 }}
                   >
-                    {/* Token Header - Mobile Responsive */}
+                    {/* Token Header - Mobile Responsive with Background Image */}
                     <motion.div
-                      className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl gradient-base-subtle"
+                      className="relative rounded-2xl overflow-hidden min-h-[200px] sm:min-h-[250px]"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: 0.1 }}
                     >
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl gradient-base flex items-center justify-center">
-                        <span className="text-2xl sm:text-3xl font-bold text-white">{selectedToken.symbol.slice(0, 2)}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h2 className="text-2xl sm:text-3xl font-bold truncate">{selectedToken.name}</h2>
-                        <p className="text-base sm:text-lg text-muted-foreground">{selectedToken.symbol}</p>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mt-2">
-                          <div className="flex items-center gap-1">
-                            <TrendingUp className="w-4 h-4 text-green-500" />
-                            <span className="text-sm text-green-600">Live Trading</span>
+                      {/* Background Image */}
+                      {selectedToken.image && selectedToken.image !== '' ? (
+                        <div
+                          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                          style={{ backgroundImage: `url(${selectedToken.image})` }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 gradient-base" />
+                      )}
+
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/70" />
+
+                      {/* Content */}
+                      <div className="relative z-10 p-6 sm:p-8 h-full flex flex-col justify-end">
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden flex items-center justify-center bg-white/20 backdrop-blur-sm border border-white/30">
+                            {selectedToken.image && selectedToken.image !== '' ? (
+                              <img
+                                src={selectedToken.image}
+                                alt={selectedToken.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const fallback = target.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className="w-full h-full bg-white/30 flex items-center justify-center"
+                              style={{ display: (selectedToken.image && selectedToken.image !== '') ? 'none' : 'flex' }}
+                            >
+                              <span className="text-2xl sm:text-3xl font-bold text-white">{selectedToken.symbol.slice(0, 2)}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Users className="w-4 h-4 text-blue-500" />
-                            <span className="text-sm text-blue-600">Active Market</span>
+                          <div className="flex-1 min-w-0">
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white truncate">{selectedToken.name}</h2>
+                            <p className="text-lg sm:text-xl text-white/90 font-medium">{selectedToken.symbol}</p>
+                          </div>
+                        </div>
+
+                        {/* Status Badges */}
+                        <div className="flex flex-wrap gap-2">
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-full border border-white/20">
+                            <TrendingUp className="w-4 h-4 text-green-400" />
+                            <span className="text-sm font-medium text-white">Live Trading</span>
+                          </div>
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-full border border-white/20">
+                            <Activity className="w-4 h-4 text-blue-400" />
+                            <span className="text-sm font-medium text-white">Active Market</span>
                           </div>
                         </div>
                       </div>

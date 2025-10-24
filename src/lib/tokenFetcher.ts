@@ -35,6 +35,7 @@ export interface NFTInfo {
  */
 export async function fetchTokenMetadata(tokenAddress: string): Promise<TokenInfo | null> {
     try {
+        console.log(`🔍 Fetching metadata for token: ${tokenAddress}`);
         const [name, symbol, description, image, twitter, telegram, website, developer, totalSupply] = await Promise.all([
             readContract(config, {
                 address: tokenAddress as `0x${string}`,
@@ -83,7 +84,7 @@ export async function fetchTokenMetadata(tokenAddress: string): Promise<TokenInf
             }),
         ]);
 
-        return {
+        const tokenInfo = {
             address: tokenAddress,
             name: name as string,
             symbol: symbol as string,
@@ -97,6 +98,15 @@ export async function fetchTokenMetadata(tokenAddress: string): Promise<TokenInf
             balance: '0', // Will be set when fetching user tokens
             isCreator: false, // Will be set when fetching user tokens
         };
+
+        console.log(`✅ Fetched metadata for ${tokenInfo.name}:`, {
+            name: tokenInfo.name,
+            symbol: tokenInfo.symbol,
+            image: tokenInfo.image,
+            description: tokenInfo.description
+        });
+
+        return tokenInfo;
     } catch (error) {
         console.error(`Error fetching token metadata for ${tokenAddress}:`, error);
         return null;
@@ -128,9 +138,14 @@ export async function fetchAllTokens(): Promise<TokenInfo[]> {
     try {
         console.log('🔍 Fetching all tokens...');
         console.log('Factory address:', contractAddresses.memeTokenFactory);
+        console.log('Environment variables:', {
+            MEME_TOKEN_FACTORY: process.env.NEXT_PUBLIC_MEME_TOKEN_FACTORY_ADDRESS,
+            EXPERIENCE_NFT: process.env.NEXT_PUBLIC_EXPERIENCE_NFT_ADDRESS,
+            UNISWAP_V3: process.env.NEXT_PUBLIC_UNISWAP_V3_LIQUIDITY_ADDRESS
+        });
 
         // Check if factory address is set
-        if (!contractAddresses.memeTokenFactory) {
+        if (!contractAddresses.memeTokenFactory || contractAddresses.memeTokenFactory === '0x0000000000000000000000000000000000000000') {
             console.log('❌ Factory contract address not set. Please set NEXT_PUBLIC_MEME_TOKEN_FACTORY_ADDRESS');
             return [];
         }
