@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/app/theme-provider";
 import { Web3Provider } from "@/components/Web3Provider";
 import { ToastContainer } from "@/components/Toast";
+import { ToastProvider } from "@/lib/toast-context";
 import { Suspense } from "react";
 // Fixed layout edge cases
 
@@ -35,10 +36,12 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--background)] text-[var(--foreground)]`}>
         <Web3Provider>
           <ThemeProvider>
-            <Suspense fallback={<div className="min-h-screen bg-[var(--background)]" />}>
-              {children}
-            </Suspense>
-            <ToastContainer />
+            <ToastProvider>
+              <Suspense fallback={<div className="min-h-screen bg-[var(--background)]" />}>
+                {children}
+              </Suspense>
+              <ToastContainer />
+            </ToastProvider>
           </ThemeProvider>
         </Web3Provider>
       </body>

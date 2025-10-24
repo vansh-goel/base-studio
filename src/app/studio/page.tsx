@@ -18,6 +18,7 @@ import {
 import { generateRawPreviewOnServer } from "../previewRaw";
 import { runImageEdit } from "../actions";
 import { SimpleWalletConnect } from "@/components/SimpleWalletConnect";
+import { MinimalMobileNavbar } from "@/components/MinimalMobileNavbar";
 // TokenMinting component not currently used
 import { ExperienceNFT } from "@/components/ExperienceNFT";
 import { SocialFeed } from "@/components/SocialFeed";
@@ -446,263 +447,245 @@ function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] flex flex-col">
-      {/* Header */}
-      <header className="border-b border-[var(--border)] bg-[var(--background)]">
-        <div className="container mx-auto flex justify-between items-center py-3 px-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full gradient-base flex items-center justify-center">
-              <span className="text-white font-bold text-sm">BS</span>
-            </div>
-            <h1 className="text-xl font-semibold">Base Studio</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <nav className="hidden md:flex items-center gap-6">
-              <a href="/" className="text-sm font-medium hover:text-primary">Studio</a>
-              <a href="/trade" className="text-sm font-medium hover:text-primary">Trade</a>
-              <a href="/profile" className="text-sm font-medium hover:text-primary">Profile</a>
-            </nav>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <SimpleWalletConnect />
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[var(--background)] flex flex-col overflow-x-hidden">
+      {/* Mobile-Friendly Header */}
+      <MinimalMobileNavbar currentPage="studio" />
 
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-6 py-12">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Base Studio</h1>
-            <p className="text-base text-[var(--muted-foreground)]">
-              Professional onchain image editing and tokenization platform. Create, edit, and monetize your photography on Base.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3">
-              <p className="text-sm uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Experience</p>
-              <p className="text-2xl font-bold text-[var(--foreground)]">
-                {isClient && experience !== undefined ? experience : 0} XP
-              </p>
-              <p className="text-sm text-[var(--muted-foreground)]">
-                Rank: {isClient && experienceLevel ? experienceLevel : "Loading..."}
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-6xl flex flex-col gap-6 lg:gap-8 px-4 sm:px-6 py-6 sm:py-8">
+          <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Base Studio</h1>
+              <p className="text-sm sm:text-base text-[var(--muted-foreground)] mt-1">
+                Professional onchain image editing and tokenization platform.
               </p>
             </div>
-          </div>
-        </header>
-
-        {isClient && experience !== undefined && (
-          <div onClick={() => setShowEvolutionModal(true)} className="cursor-pointer hover:opacity-90 transition-opacity">
-            <ExperienceTrack experience={experience} level={experienceLevel} />
-          </div>
-        )}
-
-        {/* Experience Avatar Component - Only render on client */}
-        {/* {isClient && <ExperienceAvatar />} */}
-
-        {/* Tabs */}
-        <div className="border-b border-[var(--border)] mb-6">
-          <div className="flex space-x-8">
-            <button
-              className={`pb-2 font-medium ${activeTab === 'edit' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
-              onClick={() => setActiveTab('edit')}
-            >
-              Edit Image
-            </button>
-            <button
-              className={`pb-2 font-medium ${activeTab === 'tokenize' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
-              onClick={() => setActiveTab('tokenize')}
-              disabled={!editedImageBase64}
-            >
-              Create Token
-            </button>
-          </div>
-        </div>
-
-        {activeTab === 'edit' && (
-          <><section className="grid grid-cols-1 gap-10 lg:grid-cols-5">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] p-6">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                  Upload Image
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 sm:px-4 sm:py-3">
+                <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Experience</p>
+                <p className="text-lg sm:text-2xl font-bold text-[var(--foreground)]">
+                  {isClient && experience !== undefined ? experience : 0} XP
                 </p>
-                <label className="mt-4 flex h-48 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)] text-center text-sm text-[var(--muted-foreground)] transition hover:bg-[var(--muted)]">
-                  <span className="px-4 text-[var(--foreground)]">{selectedFile ? selectedFile.name : "Drag & drop or click to upload"}</span>
-                  <input
-                    type="file"
-                    accept="image/*,.arw,.cr2,.cr3,.nef,.rw2,.raf,.dng,.pef,.sr2,.orf"
-                    className="hidden"
-                    onChange={(event) => handleFileSelect(event.target.files?.[0] ?? null)} />
-                </label>
-                {selectedFile && !supportedFileSelected && (
-                  <p className="mt-3 text-xs text-[var(--muted-foreground)]">
-                    {`This format isn't supported. Try JPEG, PNG, WebP, or RAW (${RAW_EXTENSION_DISPLAY.join(", ")}).`}
-                  </p>
-                )}
-                {selectedFile && supportedFileSelected && rawFileSelected && (
-                  <p className="mt-3 text-xs text-[var(--muted-foreground)]">
-                    {previewUrl
-                      ? "Preview rendered via Base processing pipeline."
-                      : "Preparing RAW preview via Base pipeline..."}
-                  </p>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
-                <h2 className="mb-3 text-base font-semibold text-[var(--foreground)]">Persona</h2>
-                <div className="flex gap-3">
-                  {(Object.keys(personaLabels) as Persona[]).map((key) => (
-                    <button
-                      key={key}
-                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${persona === key
-                        ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
-                        : "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)]"}`}
-                      onClick={() => setPersona(key)}
-                    >
-                      {personaLabels[key]}
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-3 text-sm text-[var(--muted-foreground)]">{personaDescriptions[persona]}</p>
+                <p className="text-xs sm:text-sm text-[var(--muted-foreground)]">
+                  Rank: {isClient && experienceLevel ? experienceLevel : "Loading..."}
+                </p>
               </div>
             </div>
+          </header>
 
-            <div className="lg:col-span-3 space-y-6">
-              <div className="grid gap-6 lg:grid-cols-2">
-                <PreviewCard
-                  title="Original"
-                  imageSrc={previewUrl ?? normalizeToDataUrl(normalizedInput)}
-                  fallbackText={selectedFile
-                    ? rawFileSelected
-                      ? "RAW preview unavailable in-browser, but edits are supported."
-                      : "Preview not available for this format"
-                    : "Upload an image to preview"}
-                  badge={normalizedInput?.source ? `Source: ${normalizedInput.source}` : undefined}
-                  onClick={() => {
-                    const src = previewUrl
-                      ? previewUrl
-                      : normalizedInput
-                        ? `data:${normalizedInput.mimeType};base64,${normalizedInput.base64}`
-                        : null;
-                    if (src) {
-                      setModalImage({ title: "Original", src, mimeType: normalizedInput?.mimeType });
-                    }
-                  }} />
-                <PreviewCard
-                  title="Edited"
-                  imageSrc={editedImageBase64 ? `data:image/png;base64,${editedImageBase64}` : null}
-                  fallbackText="Run an edit to preview"
-                  onClick={() => {
-                    if (editedImageBase64) {
-                      setModalImage({
-                        title: "Edited",
-                        src: `data:image/png;base64,${editedImageBase64}`,
-                        mimeType: "image/png",
-                      });
-                    }
-                  }} />
-              </div>
+          {isClient && experience !== undefined && (
+            <div onClick={() => setShowEvolutionModal(true)} className="cursor-pointer hover:opacity-90 transition-opacity">
+              <ExperienceTrack experience={experience} level={experienceLevel} />
+            </div>
+          )}
 
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
-                <label className="block text-sm font-semibold uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                  Edit Instructions
-                </label>
-                <textarea
-                  className="mt-4 w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm text-[var(--foreground)] shadow-sm focus:border-[var(--foreground)] focus:outline-none"
-                  rows={5}
-                  value={instructions}
-                  onChange={(event) => setInstructions(event.target.value)}
-                  placeholder="Describe your desired edits..." />
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    className="rounded-lg bg-[var(--foreground)] px-4 py-2 text-sm font-medium text-[var(--background)] transition hover:opacity-90"
-                    onClick={handleSubmit}
-                    disabled={loading || (selectedFile !== null && !supportedFileSelected)}
-                  >
-                    {loading ? "Processing..." : "Run OpenAI Edit"}
-                  </button>
-                  <button
-                    className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
-                    onClick={() => setShowImageEditor(true)}
-                    disabled={!previewUrl && !editedImageBase64}
-                  >
-                    Manual Edit
-                  </button>
-                  <button
-                    className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
-                    onClick={handleDownloadXmp}
-                    disabled={!xmpSidecar}
-                  >
-                    Download XMP
-                  </button>
-                  <button
-                    className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
-                    onClick={handleMintToken}
-                    disabled={!editedImageBase64}
-                  >
-                    Mint Token
-                  </button>
+          {/* Experience Avatar Component - Only render on client */}
+          {/* {isClient && <ExperienceAvatar />} */}
+
+          {/* Tabs */}
+          <div className="border-b border-[var(--border)] mb-4 sm:mb-6">
+            <div className="flex space-x-4 sm:space-x-8 overflow-x-auto">
+              <button
+                className={`pb-2 font-medium whitespace-nowrap text-sm sm:text-base ${activeTab === 'edit' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
+                onClick={() => setActiveTab('edit')}
+              >
+                Edit Image
+              </button>
+              <button
+                className={`pb-2 font-medium whitespace-nowrap text-sm sm:text-base ${activeTab === 'tokenize' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'}`}
+                onClick={() => setActiveTab('tokenize')}
+                disabled={!editedImageBase64}
+              >
+                Create Token
+              </button>
+            </div>
+          </div>
+
+          {activeTab === 'edit' && (
+            <><section className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:gap-10">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] p-6">
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                    Upload Image
+                  </p>
+                  <label className="mt-4 flex h-48 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)] text-center text-sm text-[var(--muted-foreground)] transition hover:bg-[var(--muted)]">
+                    <span className="px-4 text-[var(--foreground)]">{selectedFile ? selectedFile.name : "Drag & drop or click to upload"}</span>
+                    <input
+                      type="file"
+                      accept="image/*,.arw,.cr2,.cr3,.nef,.rw2,.raf,.dng,.pef,.sr2,.orf"
+                      className="hidden"
+                      onChange={(event) => handleFileSelect(event.target.files?.[0] ?? null)} />
+                  </label>
+                  {selectedFile && !supportedFileSelected && (
+                    <p className="mt-3 text-xs text-[var(--muted-foreground)]">
+                      {`This format isn't supported. Try JPEG, PNG, WebP, or RAW (${RAW_EXTENSION_DISPLAY.join(", ")}).`}
+                    </p>
+                  )}
+                  {selectedFile && supportedFileSelected && rawFileSelected && (
+                    <p className="mt-3 text-xs text-[var(--muted-foreground)]">
+                      {previewUrl
+                        ? "Preview rendered via Base processing pipeline."
+                        : "Preparing RAW preview via Base pipeline..."}
+                    </p>
+                  )}
                 </div>
-                {statusMessage && (
-                  <p className="mt-3 text-sm text-[var(--muted-foreground)]">{statusMessage}</p>
-                )}
-                {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
-              </div>
 
-              {history.length > 0 && (
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-sm">
-                  <h2 className="mb-4 text-base font-semibold">Recent Sessions</h2>
-                  <ul className="space-y-3">
-                    {history.map((item) => (
-                      <li key={item.id} className="flex flex-col gap-1 rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-3">
-                        <div className="flex flex-wrap items-center gap-2 text-sm">
-                          <span className="font-medium">{item.name}</span>
-                          <span className="rounded-full bg-[var(--muted)] px-2 py-0.5 text-xs text-[var(--muted-foreground)]">
-                            {personaLabels[item.persona]}
-                          </span>
-                          <span className="text-xs text-[var(--muted-foreground)]">
-                            {new Date(item.timestamp).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="text-sm text-[var(--muted-foreground)]">{item.instructions}</p>
-                        <span className="text-xs font-semibold text-[var(--foreground)]">+{item.xpEarned} XP</span>
-                      </li>
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+                  <h2 className="mb-3 text-base font-semibold text-[var(--foreground)]">Persona</h2>
+                  <div className="flex gap-3">
+                    {(Object.keys(personaLabels) as Persona[]).map((key) => (
+                      <button
+                        key={key}
+                        className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${persona === key
+                          ? "border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)]"
+                          : "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)]"}`}
+                        onClick={() => setPersona(key)}
+                      >
+                        {personaLabels[key]}
+                      </button>
                     ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </section>
-          </>
-        )}
-
-        {activeTab === 'tokenize' && editedImageBase64 && (
-          <section className="space-y-8">
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
-              <h2 className="text-xl font-semibold mb-4">Create Meme Token</h2>
-              <p className="text-muted-foreground mb-6">Generate a meme token based on your edited image using AI</p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <img
-                    src={`data:image/png;base64,${editedImageBase64}`}
-                    alt="Edited image"
-                    className="w-full h-auto rounded-lg mb-4"
-                  />
-                </div>
-                <div>
-                  <AITokenGenerator
-                    imageUrl={editedImageBase64 ? `data:image/png;base64,${editedImageBase64}` : ''}
-                    onTokenCreated={(tokenAddress) => {
-                      setCreatedTokenAddress(tokenAddress);
-                      setActiveTab('edit');
-                    }}
-                  />
+                  </div>
+                  <p className="mt-3 text-sm text-[var(--muted-foreground)]">{personaDescriptions[persona]}</p>
                 </div>
               </div>
-            </div>
-          </section>
-        )}
+
+              <div className="lg:col-span-3 space-y-6">
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <PreviewCard
+                    title="Original"
+                    imageSrc={previewUrl ?? normalizeToDataUrl(normalizedInput)}
+                    fallbackText={selectedFile
+                      ? rawFileSelected
+                        ? "RAW preview unavailable in-browser, but edits are supported."
+                        : "Preview not available for this format"
+                      : "Upload an image to preview"}
+                    badge={normalizedInput?.source ? `Source: ${normalizedInput.source}` : undefined}
+                    onClick={() => {
+                      const src = previewUrl
+                        ? previewUrl
+                        : normalizedInput
+                          ? `data:${normalizedInput.mimeType};base64,${normalizedInput.base64}`
+                          : null;
+                      if (src) {
+                        setModalImage({ title: "Original", src, mimeType: normalizedInput?.mimeType });
+                      }
+                    }} />
+                  <PreviewCard
+                    title="Edited"
+                    imageSrc={editedImageBase64 ? `data:image/png;base64,${editedImageBase64}` : null}
+                    fallbackText="Run an edit to preview"
+                    onClick={() => {
+                      if (editedImageBase64) {
+                        setModalImage({
+                          title: "Edited",
+                          src: `data:image/png;base64,${editedImageBase64}`,
+                          mimeType: "image/png",
+                        });
+                      }
+                    }} />
+                </div>
+
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+                  <label className="block text-sm font-semibold uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                    Edit Instructions
+                  </label>
+                  <textarea
+                    className="mt-4 w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm text-[var(--foreground)] shadow-sm focus:border-[var(--foreground)] focus:outline-none"
+                    rows={5}
+                    value={instructions}
+                    onChange={(event) => setInstructions(event.target.value)}
+                    placeholder="Describe your desired edits..." />
+                  <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                    <button
+                      className="flex-1 rounded-lg bg-[var(--foreground)] px-4 py-3 text-sm font-medium text-[var(--background)] transition hover:opacity-90"
+                      onClick={handleSubmit}
+                      disabled={loading || (selectedFile !== null && !supportedFileSelected)}
+                    >
+                      {loading ? "Processing..." : "Run OpenAI Edit"}
+                    </button>
+                    <button
+                      className="flex-1 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
+                      onClick={() => setShowImageEditor(true)}
+                      disabled={!previewUrl && !editedImageBase64}
+                    >
+                      Manual Edit
+                    </button>
+                    <button
+                      className="flex-1 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
+                      onClick={handleDownloadXmp}
+                      disabled={!xmpSidecar}
+                    >
+                      Download XMP
+                    </button>
+                    <button
+                      className="flex-1 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
+                      onClick={handleMintToken}
+                      disabled={!editedImageBase64}
+                    >
+                      Mint Token
+                    </button>
+                  </div>
+                  {statusMessage && (
+                    <p className="mt-3 text-sm text-[var(--muted-foreground)]">{statusMessage}</p>
+                  )}
+                  {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+                </div>
+
+                {history.length > 0 && (
+                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-sm">
+                    <h2 className="mb-4 text-base font-semibold">Recent Sessions</h2>
+                    <ul className="space-y-3">
+                      {history.map((item) => (
+                        <li key={item.id} className="flex flex-col gap-1 rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="font-medium">{item.name}</span>
+                            <span className="rounded-full bg-[var(--muted)] px-2 py-0.5 text-xs text-[var(--muted-foreground)]">
+                              {personaLabels[item.persona]}
+                            </span>
+                            <span className="text-xs text-[var(--muted-foreground)]">
+                              {new Date(item.timestamp).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-[var(--muted-foreground)]">{item.instructions}</p>
+                          <span className="text-xs font-semibold text-[var(--foreground)]">+{item.xpEarned} XP</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </section>
+            </>
+          )}
+
+          {activeTab === 'tokenize' && editedImageBase64 && (
+            <section className="space-y-8">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+                <h2 className="text-xl font-semibold mb-4">Create Meme Token</h2>
+                <p className="text-muted-foreground mb-6">Generate a meme token based on your edited image using AI</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <img
+                      src={`data:image/png;base64,${editedImageBase64}`}
+                      alt="Edited image"
+                      className="w-full h-auto rounded-lg mb-4"
+                    />
+                  </div>
+                  <div>
+                    <AITokenGenerator
+                      imageUrl={editedImageBase64 ? `data:image/png;base64,${editedImageBase64}` : ''}
+                      onTokenCreated={(tokenAddress) => {
+                        setCreatedTokenAddress(tokenAddress);
+                        setActiveTab('edit');
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
       </main>
       {modalImage ? <Lightbox image={modalImage} onClose={() => setModalImage(null)} /> : null}
       {showEvolutionModal ? (
@@ -913,16 +896,5 @@ export default function StudioPage() {
     return null; // Will redirect, no need to render anything
   }
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="border-b border-[var(--border)] bg-[var(--background)]">
-      </header>
-
-      {/* Main Content - Simplified */}
-      <main className="flex-1">
-        <Home />
-      </main>
-    </div>
-  );
+  return <Home />;
 }

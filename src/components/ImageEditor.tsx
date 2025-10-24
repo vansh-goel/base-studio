@@ -190,6 +190,20 @@ export function ImageEditor({ imageSrc, onImageChange, onClose }: ImageEditorPro
         }
     };
 
+    const downloadImage = () => {
+        if (!canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const dataUrl = canvas.toDataURL('image/png');
+
+        const link = document.createElement('a');
+        link.download = `edited-image-${Date.now()}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const SliderControl = ({
         label,
         value,
@@ -207,10 +221,10 @@ export function ImageEditor({ imageSrc, onImageChange, onClose }: ImageEditorPro
         onChange: (value: number) => void;
         unit?: string;
     }) => (
-        <div className="space-y-2">
+        <div className="space-y-3 p-3 bg-[var(--muted)] rounded-lg">
             <div className="flex justify-between items-center">
                 <label className="text-sm font-medium text-[var(--foreground)]">{label}</label>
-                <span className="text-sm text-[var(--muted-foreground)]">
+                <span className="text-sm font-semibold text-[var(--foreground)] bg-[var(--card)] px-2 py-1 rounded">
                     {value}{unit}
                 </span>
             </div>
@@ -221,120 +235,140 @@ export function ImageEditor({ imageSrc, onImageChange, onClose }: ImageEditorPro
                 step={step}
                 value={value}
                 onChange={(e) => onChange(parseFloat(e.target.value))}
-                className="w-full h-2 bg-[var(--muted)] rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-3 bg-[var(--background)] rounded-lg appearance-none cursor-pointer slider touch-manipulation"
+                style={{
+                    background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${((value - min) / (max - min)) * 100}%, var(--muted) ${((value - min) / (max - min)) * 100}%, var(--muted) 100%)`
+                }}
             />
         </div>
     );
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6 py-12">
-            <div className="relative w-full max-w-6xl rounded-3xl bg-[var(--card)] p-6 shadow-2xl outline outline-1 outline-[var(--border)]">
-                <button
-                    className="absolute right-4 top-4 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-sm text-[var(--foreground)] shadow hover:bg-[var(--muted)]"
-                    aria-label="Close editor"
-                    onClick={onClose}
-                >
-                    ✕
-                </button>
+        <div className="fixed inset-0 z-50 bg-black/80 p-2 sm:p-6">
+            <div className="w-full h-full sm:h-auto sm:max-w-6xl sm:mx-auto sm:my-6 rounded-lg sm:rounded-3xl bg-[var(--card)] shadow-2xl outline outline-1 outline-[var(--border)] flex flex-col">
+                {/* Mobile Header */}
+                <div className="flex items-center justify-between p-4 border-b border-[var(--border)] bg-[var(--card)] sticky top-0 z-10">
+                    <h2 className="text-lg font-semibold">Edit Image</h2>
+                    <button
+                        className="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-sm text-[var(--foreground)] shadow hover:bg-[var(--muted)]"
+                        aria-label="Close editor"
+                        onClick={onClose}
+                    >
+                        ✕
+                    </button>
+                </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Image Preview */}
-                    <div className="lg:col-span-2">
+                {/* Mobile Layout */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Image Preview - Mobile First */}
+                    <div className="flex-shrink-0 p-4 border-b border-[var(--border)]">
                         <h3 className="text-lg font-semibold mb-4">Image Preview</h3>
-                        <div className="relative border border-[var(--border)] rounded-lg overflow-hidden bg-[var(--muted)]">
+                        <div className="relative border border-[var(--border)] rounded-lg overflow-hidden bg-[var(--muted)] h-[250px] sm:h-[300px]">
                             <canvas
                                 ref={canvasRef}
-                                className="w-full h-auto max-h-[80vh] object-contain mx-auto"
-                                style={{ display: 'block', minHeight: '300px' }}
+                                className="w-full h-full object-contain"
+                                style={{ display: 'block' }}
                             />
                         </div>
                     </div>
 
-                    {/* Controls */}
-                    <div className="space-y-6">
-                        <div>
-                            <h3 className="text-lg font-semibold mb-4">Adjustments</h3>
-                            <div className="space-y-4">
-                                <SliderControl
-                                    label="Brightness"
-                                    value={adjustments.brightness}
-                                    min={-100}
-                                    max={100}
-                                    onChange={(value) => handleAdjustmentChange('brightness', value)}
-                                    unit="%"
-                                />
-                                <SliderControl
-                                    label="Contrast"
-                                    value={adjustments.contrast}
-                                    min={-100}
-                                    max={100}
-                                    onChange={(value) => handleAdjustmentChange('contrast', value)}
-                                    unit="%"
-                                />
-                                <SliderControl
-                                    label="Saturation"
-                                    value={adjustments.saturation}
-                                    min={-100}
-                                    max={100}
-                                    onChange={(value) => handleAdjustmentChange('saturation', value)}
-                                    unit="%"
-                                />
-                                <SliderControl
-                                    label="Hue"
-                                    value={adjustments.hue}
-                                    min={-180}
-                                    max={180}
-                                    onChange={(value) => handleAdjustmentChange('hue', value)}
-                                    unit="°"
-                                />
-                                <SliderControl
-                                    label="Exposure"
-                                    value={adjustments.exposure}
-                                    min={-200}
-                                    max={200}
-                                    onChange={(value) => handleAdjustmentChange('exposure', value)}
-                                    unit="%"
-                                />
-                                <SliderControl
-                                    label="Gamma"
-                                    value={adjustments.gamma}
-                                    min={0.1}
-                                    max={3}
-                                    step={0.1}
-                                    onChange={(value) => handleAdjustmentChange('gamma', value)}
-                                />
-                                <SliderControl
-                                    label="Blur"
-                                    value={adjustments.blur}
-                                    min={0}
-                                    max={10}
-                                    step={0.1}
-                                    onChange={(value) => handleAdjustmentChange('blur', value)}
-                                    unit="px"
-                                />
-                                <SliderControl
-                                    label="Sharpen"
-                                    value={adjustments.sharpen}
-                                    min={0}
-                                    max={100}
-                                    onChange={(value) => handleAdjustmentChange('sharpen', value)}
-                                    unit="%"
-                                />
-                            </div>
+                    {/* Controls - Mobile Scrollable */}
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        <div className="p-4 border-b border-[var(--border)]">
+                            <h3 className="text-lg font-semibold">Adjustments</h3>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                            <SliderControl
+                                label="Brightness"
+                                value={adjustments.brightness}
+                                min={-100}
+                                max={100}
+                                onChange={(value) => handleAdjustmentChange('brightness', value)}
+                                unit="%"
+                            />
+                            <SliderControl
+                                label="Contrast"
+                                value={adjustments.contrast}
+                                min={-100}
+                                max={100}
+                                onChange={(value) => handleAdjustmentChange('contrast', value)}
+                                unit="%"
+                            />
+                            <SliderControl
+                                label="Saturation"
+                                value={adjustments.saturation}
+                                min={-100}
+                                max={100}
+                                onChange={(value) => handleAdjustmentChange('saturation', value)}
+                                unit="%"
+                            />
+                            <SliderControl
+                                label="Hue"
+                                value={adjustments.hue}
+                                min={-180}
+                                max={180}
+                                onChange={(value) => handleAdjustmentChange('hue', value)}
+                                unit="°"
+                            />
+                            <SliderControl
+                                label="Exposure"
+                                value={adjustments.exposure}
+                                min={-200}
+                                max={200}
+                                onChange={(value) => handleAdjustmentChange('exposure', value)}
+                                unit="%"
+                            />
+                            <SliderControl
+                                label="Gamma"
+                                value={adjustments.gamma}
+                                min={0.1}
+                                max={3}
+                                step={0.1}
+                                onChange={(value) => handleAdjustmentChange('gamma', value)}
+                            />
+                            <SliderControl
+                                label="Blur"
+                                value={adjustments.blur}
+                                min={0}
+                                max={10}
+                                step={0.1}
+                                onChange={(value) => handleAdjustmentChange('blur', value)}
+                                unit="px"
+                            />
+                            <SliderControl
+                                label="Sharpen"
+                                value={adjustments.sharpen}
+                                min={0}
+                                max={100}
+                                onChange={(value) => handleAdjustmentChange('sharpen', value)}
+                                unit="%"
+                            />
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="space-y-3">
+                    </div>
+
+                    {/* Action Buttons - Mobile Sticky */}
+                    <div className="flex-shrink-0 p-4 border-t border-[var(--border)] bg-[var(--card)]">
+                        <div className="flex flex-col sm:flex-row gap-3">
                             <button
                                 onClick={resetAdjustments}
-                                className="w-full rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
+                                className="flex-1 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)]"
                             >
                                 Reset All
                             </button>
                             <button
+                                onClick={downloadImage}
+                                className="flex-1 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--muted)] flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Download
+                            </button>
+                            <button
                                 onClick={saveImage}
                                 disabled={isProcessing}
-                                className="w-full rounded-lg bg-[var(--foreground)] px-4 py-2 text-sm font-medium text-[var(--background)] transition hover:opacity-90 disabled:opacity-50"
+                                className="flex-1 rounded-lg bg-[var(--foreground)] px-4 py-3 text-sm font-medium text-[var(--background)] transition hover:opacity-90 disabled:opacity-50"
                             >
                                 {isProcessing ? 'Processing...' : 'Apply Changes'}
                             </button>

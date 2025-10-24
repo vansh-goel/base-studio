@@ -5,6 +5,7 @@ import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 import { WalletConnect } from "@/components/WalletConnect";
 import { SimpleWalletConnect } from "@/components/SimpleWalletConnect";
+import { MinimalMobileNavbar } from "@/components/MinimalMobileNavbar";
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
@@ -76,39 +77,21 @@ export default function LandingPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-            {/* Header */}
-            <motion.header
-                className="flex justify-between items-center p-6"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-            >
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl gradient-base flex items-center justify-center">
-                        <Camera className="w-6 h-6 text-white" />
-                    </div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                        Base Studio
-                    </h1>
-                </div>
-                <div className="flex items-center gap-4">
-                    <ThemeToggle />
-                    <SimpleWalletConnect onConnect={handleWalletConnect} />
-                </div>
-            </motion.header>
+            {/* Minimal Mobile Header */}
+            <MinimalMobileNavbar currentPage="landing" />
 
             {/* Hero Section */}
-            <main className="flex-1 px-6 py-12">
+            <main className="flex-1 px-4 sm:px-6 py-8 sm:py-12">
                 <div className="max-w-7xl mx-auto">
                     {/* Hero Content */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                         <motion.div
                             className="space-y-8"
                             initial={{ opacity: 0, x: -50 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.6, delay: 0.2 }}
                         >
-                            <div className="space-y-6">
+                            <div className="space-y-4 sm:space-y-6">
                                 <motion.div
                                     className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20"
                                     initial={{ opacity: 0, scale: 0.9 }}
@@ -119,14 +102,14 @@ export default function LandingPage() {
                                     <span className="text-sm font-medium text-primary">Built on Base</span>
                                 </motion.div>
 
-                                <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
+                                <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight">
                                     Onchain Editor &{" "}
                                     <span className="bg-gradient-to-r">
                                         Marketplace
                                     </span>
                                 </h1>
 
-                                <p className="text-xl text-muted-foreground max-w-lg">
+                                <p className="text-lg sm:text-xl text-muted-foreground max-w-lg">
                                     The first decentralized platform for photographers to edit, tokenize, and trade their creative work on Base.
                                 </p>
                             </div>

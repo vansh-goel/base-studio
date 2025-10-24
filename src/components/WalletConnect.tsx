@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { User, Wallet as WalletIcon, Smartphone, Monitor } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useToast } from '@/lib/toast';
+import { useToast } from '@/lib/toast-context';
 // Improved wallet accessibility
 
 
@@ -16,16 +16,19 @@ interface WalletConnectProps {
 
 export function WalletConnect({ onConnect }: WalletConnectProps) {
     const { address, isConnected } = useAccount();
+    const [isHydrated, setIsHydrated] = useState(false);
+    const toast = useToast();
+
     const { connect, connectors, isPending } = useConnect({
         mutation: {
             onError: (error) => {
                 console.error('Wallet connection error:', error);
                 // Handle different error types gracefully
-                if (error.message.includes('User rejected')) {
+                if (error.message.includes('User rejected') || error.message.includes('UserRejectedRequestError')) {
                     toast.warning('Connection Cancelled', 'You cancelled the wallet connection request.');
                 } else if (error.message.includes('chain')) {
                     toast.error('Wrong Network', 'Please switch to Base Sepolia network in your wallet.');
-                } else if (error.message.includes('rejected')) {
+                } else if (error.message.includes('rejected') || error.message.includes('Connection request reset')) {
                     toast.error('Connection Rejected', 'Please approve the connection in your wallet.');
                 } else {
                     toast.error('Connection Failed', 'Unable to connect to wallet. Please try again.');
@@ -38,8 +41,6 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
         }
     });
     const { disconnect } = useDisconnect();
-    const [isHydrated, setIsHydrated] = useState(false);
-    const toast = useToast();
 
     useEffect(() => {
         setIsHydrated(true);
@@ -116,9 +117,14 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
                         key={connector.uid}
                         variant="secondary"
                         size="lg"
-                        onClick={() => {
-                            connect({ connector });
-                            onConnect?.();
+                        onClick={async () => {
+                            try {
+                                await connect({ connector });
+                                onConnect?.();
+                            } catch (error) {
+                                // Error is already handled by the mutation onError callback
+                                console.log('Connection attempt failed, handled by toast notification');
+                            }
                         }}
                         disabled={isPending}
                         className="flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/30 py-3"
