@@ -44,6 +44,7 @@
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@tailwindcss/postcss": "^4.1.16",
+    "@types/minimatch": "^5.1.2",
     "@types/node": "^24.9.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.2.2",

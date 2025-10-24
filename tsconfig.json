@@ -8,6 +8,9 @@
     ],
     "allowJs": false,
     "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
