@@ -109,7 +109,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
             transition={{ duration: 0.3 }}
         >
             <div className="text-center">
-                <p className="text-sm text-white/70 mb-3">Connect your wallet to continue</p>
+                <p className="text-sm text-[var(--muted-foreground)] mb-3">Connect your wallet to continue</p>
             </div>
             <div className="flex flex-col gap-2">
                 {connectors.map((connector) => (
@@ -127,7 +127,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
                             }
                         }}
                         disabled={isPending}
-                        className="flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/30 py-3"
+                        className="flex items-center justify-center gap-3 bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] border-[var(--border)] hover:border-[var(--foreground)] py-3"
                     >
                         {getConnectorIcon(connector.name)}
                         <span className="font-medium">
@@ -137,7 +137,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
                 ))}
             </div>
             <div className="text-center">
-                <p className="text-xs text-white/50">
+                <p className="text-xs text-[var(--muted-foreground)]">
                     Mobile users: Use "Mobile Wallet" to connect with WalletConnect
                 </p>
             </div>
