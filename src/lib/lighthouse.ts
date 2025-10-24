@@ -1,6 +1,5 @@
-import lighthouse from '@lighthouse-web3/sdk';
+// Dynamic import to avoid serverless dependency issues
 // Improved ipfs accessibility
-
 
 export interface LighthouseConfig {
     apiKey: string;
@@ -25,11 +24,14 @@ export class LighthouseStorage {
      */
     async uploadFile(file: File): Promise<UploadResult> {
         try {
+            // Dynamic import to avoid serverless issues
+            const lighthouse = await import('@lighthouse-web3/sdk');
+
             console.log('Starting Lighthouse upload...', { fileName: file.name, fileSize: file.size });
 
             // Convert File to ArrayBuffer for Lighthouse
             const arrayBuffer = await file.arrayBuffer();
-            const uploadResponse = await lighthouse.uploadBuffer(arrayBuffer, this.apiKey);
+            const uploadResponse = await lighthouse.default.uploadBuffer(arrayBuffer, this.apiKey);
 
             console.log('Lighthouse upload response:', uploadResponse);
 
@@ -57,12 +59,15 @@ export class LighthouseStorage {
      */
     async uploadMetadata(metadata: Record<string, unknown>): Promise<UploadResult> {
         try {
+            // Dynamic import to avoid serverless issues
+            const lighthouse = await import('@lighthouse-web3/sdk');
+
             const jsonString = JSON.stringify(metadata, null, 2);
             const buffer = Buffer.from(jsonString, 'utf-8');
 
             console.log('Starting Lighthouse metadata upload...', { metadataSize: buffer.length });
 
-            const uploadResponse = await lighthouse.uploadBuffer(buffer, this.apiKey);
+            const uploadResponse = await lighthouse.default.uploadBuffer(buffer, this.apiKey);
 
             console.log('Lighthouse metadata upload response:', uploadResponse);
 

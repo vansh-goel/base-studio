@@ -51,6 +51,7 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
         if (!imageUrl) return;
 
         setIsGenerating(true);
+        setStatusMessage("Generating AI metadata...");
 
         try {
             // Extract base64 data from the imageUrl
@@ -58,34 +59,36 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
 
             console.log('Generating metadata for image...');
 
-            // First, test IPFS upload to see if it's working
-            console.log('Testing IPFS upload...');
-            try {
-                const uploadResponse = await fetch('/api/mint-nft', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        imageBase64: imageUrl,
-                        name: 'Test Upload',
-                        description: 'Testing IPFS upload during metadata generation',
-                        attributes: [
-                            { trait_type: "Test", value: "Metadata Generation" }
-                        ]
-                    }),
-                });
+            // Upload image to IPFS first for faster token creation later
+            console.log('Uploading image to IPFS...');
+            setStatusMessage("Uploading image to IPFS...");
 
-                if (uploadResponse.ok) {
-                    const uploadResult = await uploadResponse.json();
-                    console.log('✅ IPFS upload successful during metadata generation:', uploadResult);
-                    console.log('Image URL from IPFS:', uploadResult.imageUrl);
-                } else {
-                    const errorData = await uploadResponse.json();
-                    console.error('❌ IPFS upload failed during metadata generation:', errorData);
-                }
-            } catch (uploadError) {
-                console.error('❌ IPFS upload error during metadata generation:', uploadError);
+            const uploadResponse = await fetch('/api/mint-nft', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    imageBase64: imageUrl,
+                    name: 'Metadata Generation',
+                    description: 'Uploading image during metadata generation for faster token creation',
+                    attributes: [
+                        { trait_type: "Stage", value: "Metadata Generation" }
+                    ]
+                }),
+            });
+
+            let imageUrlFromIPFS = imageUrl; // fallback to original imageUrl
+
+            if (uploadResponse.ok) {
+                const uploadResult = await uploadResponse.json();
+                console.log('✅ IPFS upload successful:', uploadResult);
+                imageUrlFromIPFS = uploadResult.imageUrl;
+                setStatusMessage("Image uploaded to IPFS! Generating metadata...");
+            } else {
+                const errorData = await uploadResponse.json();
+                console.error('❌ IPFS upload failed:', errorData);
+                setStatusMessage("IPFS upload failed, using local image. Generating metadata...");
             }
 
             // Call OpenAI API to analyze the image and generate token metadata
@@ -112,10 +115,10 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
             const fallbackMetadata: TokenMetadata = {
                 name: "AI Generated Meme Token",
                 symbol: "AIMEME",
-                description: "This token represents a unique AI-enhanced image created in 0rbit.",
-                twitter: "https://twitter.com/aimemetoken",
-                telegram: "https://t.me/aimemetoken",
-                website: "https://aimeme.example.com"
+                description: "This token represents a unique AI-enhanced image created in Base Studio.",
+                twitter: "https://twitter.com/basestudio",
+                telegram: "https://t.me/basestudio",
+                website: "https://basestudio.app"
             };
             setMetadata(fallbackMetadata);
         } finally {
