@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { WalletConnect } from "@/components/WalletConnect";
+import { SimpleWalletConnect } from "@/components/SimpleWalletConnect";
 import { contractAddresses } from "@/lib/wagmi";
 import { MEME_TOKEN_FACTORY_ABI, EXPERIENCE_NFT_ABI } from "@/lib/contracts";
 import { ExperienceNFT } from "@/components/ExperienceNFT";
@@ -179,7 +179,7 @@ export default function ProfilePage() {
             </nav>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <WalletConnect />
+              <SimpleWalletConnect />
             </div>
           </div>
         </div>

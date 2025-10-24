@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
-import { WalletConnect, OnchainKitConnect } from "@/components/WalletConnect";
+import { WalletConnect } from "@/components/WalletConnect";
+import { SimpleWalletConnect } from "@/components/SimpleWalletConnect";
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
@@ -12,7 +13,7 @@ import Hero3D from "@/components/Hero3D";
 
 const ThemeToggle = dynamic(
     () => import("@/components/theme-toggle").then((mod) => ({ default: mod.ThemeToggle })),
-// Enhanced landing UX
+    // Enhanced landing UX
 
     {
         ssr: false,
@@ -92,7 +93,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center gap-4">
                     <ThemeToggle />
-                    <WalletConnect onConnect={handleWalletConnect} />
+                    <SimpleWalletConnect onConnect={handleWalletConnect} />
                 </div>
             </motion.header>
 
@@ -131,7 +132,7 @@ export default function LandingPage() {
                             </div>
 
                             <motion.div
-                                className="flex flex-col sm:flex-row gap-4"
+                                className="flex flex-wrap sm:flex-row gap-4"
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5, delay: 0.4 }}

@@ -1,20 +1,17 @@
-// Final improvements and bug fixes - 2025-10-24T15:36:53.369Z
 'use client';
 
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { User, Wallet as WalletIcon, Smartphone, Monitor } from 'lucide-react';
+import { User, Wallet as WalletIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/lib/toast';
-// Improved wallet accessibility
 
-
-interface WalletConnectProps {
+interface SimpleWalletConnectProps {
     onConnect?: () => void;
 }
 
-export function WalletConnect({ onConnect }: WalletConnectProps) {
+export function SimpleWalletConnect({ onConnect }: SimpleWalletConnectProps) {
     const { address, isConnected } = useAccount();
     const { connect, connectors, isPending } = useConnect({
         mutation: {
@@ -80,65 +77,40 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
         );
     }
 
-    const getConnectorIcon = (connectorName: string) => {
-        if (connectorName.toLowerCase().includes('walletconnect')) {
-            return <Smartphone className="w-4 h-4" />;
-        }
-        if (connectorName.toLowerCase().includes('injected')) {
-            return <Monitor className="w-4 h-4" />;
-        }
-        return <WalletIcon className="w-4 h-4" />;
-    };
+    // Filter to only show injected wallet (MetaMask, etc.)
+    const injectedConnector = connectors.find(connector =>
+        connector.name.toLowerCase().includes('injected') ||
+        connector.name.toLowerCase().includes('metamask')
+    );
 
-    const getConnectorLabel = (connectorName: string) => {
-        if (connectorName.toLowerCase().includes('walletconnect')) {
-            return 'Mobile Wallet';
-        }
-        if (connectorName.toLowerCase().includes('injected')) {
-            return 'Browser Wallet';
-        }
-        return connectorName;
-    };
+    if (!injectedConnector) {
+        return (
+            <div className="text-center">
+                <p className="text-sm text-white/70">No wallet found</p>
+            </div>
+        );
+    }
 
     return (
         <motion.div
-            className="flex flex-col gap-3"
+            className="flex gap-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
         >
-            <div className="text-center">
-                <p className="text-sm text-white/70 mb-3">Connect your wallet to continue</p>
-            </div>
-            <div className="flex flex-col gap-2">
-                {connectors.map((connector) => (
-                    <Button
-                        key={connector.uid}
-                        variant="secondary"
-                        size="lg"
-                        onClick={() => {
-                            connect({ connector });
-                            onConnect?.();
-                        }}
-                        disabled={isPending}
-                        className="flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/30 py-3"
-                    >
-                        {getConnectorIcon(connector.name)}
-                        <span className="font-medium">
-                            {isPending ? 'Connecting...' : getConnectorLabel(connector.name)}
-                        </span>
-                    </Button>
-                ))}
-            </div>
-            <div className="text-center">
-                <p className="text-xs text-white/50">
-                    Mobile users: Use "Mobile Wallet" to connect with WalletConnect
-                </p>
-            </div>
+            <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                    connect({ connector: injectedConnector });
+                    onConnect?.();
+                }}
+                disabled={isPending}
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/30"
+            >
+                <WalletIcon className="w-4 h-4" />
+                {isPending ? 'Connecting...' : 'Connect Wallet'}
+            </Button>
         </motion.div>
     );
 }
-
-// Alias for consistency
-export const OnchainKitConnect = WalletConnect;
-

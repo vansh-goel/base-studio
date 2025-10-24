@@ -17,7 +17,7 @@ import {
 } from "@/lib/fileFormats";
 import { generateRawPreviewOnServer } from "../previewRaw";
 import { runImageEdit } from "../actions";
-import { WalletConnect } from "@/components/WalletConnect";
+import { SimpleWalletConnect } from "@/components/SimpleWalletConnect";
 // TokenMinting component not currently used
 import { ExperienceNFT } from "@/components/ExperienceNFT";
 import { SocialFeed } from "@/components/SocialFeed";
@@ -30,7 +30,7 @@ import { useExperienceNFT } from "@/lib/experienceNFT";
 
 const ThemeToggle = dynamic(
   () => import("@/components/theme-toggle").then((mod) => ({ default: mod.ThemeToggle })),
-// Improved studio accessibility
+  // Improved studio accessibility
 
   {
     ssr: false,
@@ -66,7 +66,7 @@ type ModalImage = {
 };
 
 
-export function Home() {
+function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<ExtractedMetadata | null>(null);
@@ -464,7 +464,7 @@ export function Home() {
             </nav>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <WalletConnect />
+              <SimpleWalletConnect />
             </div>
           </div>
         </div>

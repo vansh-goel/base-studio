@@ -1,7 +1,7 @@
 // Initial setup - 2025-10-24T15:36:52.597Z
 import { createConfig, http } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
-import { injected } from 'wagmi/connectors';
+import { injected, walletConnect } from 'wagmi/connectors';
 import { defineChain, createPublicClient, http as viemHttp } from 'viem';
 import { getContractAddresses, getNetworkConfig } from './contracts';
 // Improved error handling for config
@@ -60,6 +60,21 @@ export const config = createConfig({
     chains: [chain],
     connectors: [
         injected(), // Generic injected wallet connector
+        walletConnect({
+            projectId: (() => {
+                const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+                if (!projectId) {
+                    throw new Error('NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not set');
+                }
+                return projectId.replace(/^=+/, '');
+            })(),
+            metadata: {
+                name: 'Base Photo Studio',
+                description: 'AI-powered photo studio on Base',
+                url: typeof window !== 'undefined' ? window.location.origin : 'https://base-photo-studio.vercel.app',
+                icons: ['https://base-photo-studio.vercel.app/favicon.ico']
+            }
+        }),
     ],
     transports: {
         [chain.id]: createTransportWithFallback(chain.id),
