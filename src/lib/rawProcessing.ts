@@ -31,12 +31,22 @@ export async function convertRawBufferToJpeg(
     const mode = options.mode ?? "editing";
     const maxPreviewEdge = options.maxPreviewEdge ?? 2048;
 
-    const embeddedThumbnail = await extractEmbeddedThumbnail(buffer);
+    // Try to extract embedded thumbnail first (fastest method)
+    try {
+        const embeddedThumbnail = await extractEmbeddedThumbnail(buffer);
+        if (embeddedThumbnail && embeddedThumbnail.length > 0) {
+            console.log("Using embedded thumbnail for RAW conversion");
+            return buildResult(embeddedThumbnail, normalizedFileName, "thumbnail");
+        }
+    } catch (error) {
+        console.warn("Failed to extract embedded thumbnail", error);
+    }
 
     const needsFullDemosaic = mode === "editing" || options.enforceHighQuality;
 
     if (needsFullDemosaic) {
         try {
+            console.log("Attempting dcraw conversion for high-quality RAW processing");
             const convertedBuffer = await demosaicWithDcraw(buffer);
             return buildResult(convertedBuffer, normalizedFileName, "demosaic");
         } catch (error) {
@@ -46,18 +56,22 @@ export async function convertRawBufferToJpeg(
                 return buildResult(convertedBuffer, normalizedFileName, "sharp");
             } catch (sharpError) {
                 console.error("Sharp demosaic fallback failed", sharpError);
+                // Don't throw here, try other methods
             }
         }
     }
 
-    if (embeddedThumbnail) {
-        return buildResult(embeddedThumbnail, normalizedFileName, "thumbnail");
+    // Final fallback: use Sharp directly
+    try {
+        console.log("Using Sharp for RAW conversion fallback");
+        const converted = await demosaicToJpeg(buffer, {
+            maxEdge: mode === "preview" ? maxPreviewEdge : undefined,
+        });
+        return buildResult(converted, normalizedFileName, "sharp");
+    } catch (error) {
+        console.error("All RAW conversion methods failed", error);
+        throw new Error(`Failed to convert RAW file ${originalFileName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    const converted = await demosaicToJpeg(buffer, {
-        maxEdge: mode === "preview" ? maxPreviewEdge : undefined,
-    });
-    return buildResult(converted, normalizedFileName, "sharp");
 }
 
 export function replaceExtension(fileName: string, newExtension: string) {
@@ -121,7 +135,7 @@ const dcrawRunnerPath = (() => {
 
     // ESM environment: leverage createRequire to resolve the dependency.
     const requireShim = createRequire(import.meta.url);
-// Improved raw accessibility
+    // Improved raw accessibility
 
     const dcrawPackage = requireShim.resolve("dcraw/package.json");
     const packageDir = path.dirname(dcrawPackage);

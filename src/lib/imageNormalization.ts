@@ -1,4 +1,5 @@
 import { convertRawBufferToJpeg, type RawConversionSource } from "./rawProcessing";
+import sharp from "sharp";
 // Added normalization logging
 
 
@@ -73,9 +74,31 @@ export async function normalizeImageForEditing(
             };
         } catch (fallbackError) {
             console.error("RAW conversion fallback also failed", fallbackError);
-            throw new Error(
-                "We couldn't process this RAW file automatically. Try converting it to JPEG manually and upload again."
-            );
+
+            // Final fallback: try to use Sharp directly on the RAW file
+            try {
+                console.log("Attempting final Sharp fallback for RAW file");
+                const sharpBuffer = await sharp(originalBuffer)
+                    .rotate()
+                    .withMetadata()
+                    .jpeg({ quality: 85, chromaSubsampling: "4:4:4" })
+                    .toBuffer();
+
+                return {
+                    base64: sharpBuffer.toString("base64"),
+                    fileName: payload.fileName.replace(/\.[^.]+$/, ".jpg"),
+                    normalizedFormat: "jpeg",
+                    normalizedMimeType: "image/jpeg",
+                    originalByteLength,
+                    normalizedByteLength: sharpBuffer.byteLength,
+                    rawConversionSource: "sharp",
+                };
+            } catch (sharpError) {
+                console.error("Final Sharp fallback also failed", sharpError);
+                throw new Error(
+                    "We couldn't process this RAW file automatically. Try converting it to JPEG manually and upload again."
+                );
+            }
         }
     }
 }

@@ -43,7 +43,7 @@ const ThemeToggle = dynamic(
 
 
 
-type Persona = "general" | "creative" | "technical";
+type Persona = "general" | "creative" | "technical" | "manual";
 
 type EditHistoryItem = {
   id: string;
@@ -58,6 +58,7 @@ const personaLabels: Record<Persona, string> = {
   general: "Balanced",
   creative: "Creative Visionary",
   technical: "Technical Restorer",
+  manual: "Manual Edit",
 };
 
 type ModalImage = {
@@ -279,17 +280,7 @@ function Home() {
         source: response.normalizedInputSource,
       });
 
-      const xpEarned = 50;
-      // Earn experience on blockchain
-      try {
-        await earnExperience(xpEarned);
-        console.log(`Earned ${xpEarned} XP on blockchain`);
-        setStatusMessage(`Edit complete! Earned ${xpEarned} XP. Download the XMP sidecar or mint your NFT.`);
-      } catch (error) {
-        console.warn('Failed to earn blockchain experience:', error);
-        setStatusMessage("Edit complete! Download the XMP sidecar or mint your NFT.");
-        // Continue with local tracking as fallback
-      }
+      setStatusMessage("Edit complete! Download the XMP sidecar or mint your NFT.");
 
       // Generate stable ID and timestamp only on client side
       const stableId = isClient ? crypto.randomUUID() : `temp-${Date.now()}`;
@@ -302,16 +293,35 @@ function Home() {
           timestamp: stableTimestamp,
           persona,
           instructions,
-          xpEarned,
+          xpEarned: 50,
         },
         ...prev,
       ]);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Unknown error occurred.");
-      setStatusMessage(null);
+      setStatusMessage("Edit failed, but you still earned XP for trying!");
     } finally {
       setLoading(false);
+    }
+
+    // Always earn experience, regardless of edit success
+    const xpEarned = 50;
+    try {
+      await earnExperience(xpEarned);
+      console.log(`Earned ${xpEarned} XP on blockchain`);
+      if (editedImageBase64) {
+        setStatusMessage(`Edit complete! Earned ${xpEarned} XP. Download the XMP sidecar or mint your NFT.`);
+      } else {
+        setStatusMessage(`Edit failed, but earned ${xpEarned} XP for trying! Try again with different settings.`);
+      }
+    } catch (error) {
+      console.warn('Failed to earn blockchain experience:', error);
+      if (editedImageBase64) {
+        setStatusMessage("Edit complete! Download the XMP sidecar or mint your NFT.");
+      } else {
+        setStatusMessage("Edit failed, but you still earned XP for trying!");
+      }
     }
   }, [selectedFile, supportedFileSelected, instructions, persona, metadata, isRawFormat, rawPreview, isClient]);
 
@@ -444,6 +454,7 @@ function Home() {
     general: "Balanced adjustments with a human touch.",
     creative: "Bold colors, stylization, and narrative framing.",
     technical: "Restoration, denoise, and detail recovery.",
+    manual: "Manual adjustments using sliders and controls.",
   };
 
   return (
@@ -706,11 +717,38 @@ function Home() {
       {showImageEditor && (previewUrl || editedImageBase64) && (
         <ImageEditor
           imageSrc={editedImageBase64 ? `data:image/png;base64,${editedImageBase64}` : previewUrl!}
-          onImageChange={(editedImageSrc) => {
+          onImageChange={async (editedImageSrc) => {
             // Extract base64 from data URL
             const base64 = editedImageSrc.split(',')[1];
             setEditedImageBase64(base64);
             setShowImageEditor(false);
+
+            // Earn experience for manual editing
+            const xpEarned = 30; // Slightly less XP for manual edits vs AI edits
+            try {
+              await earnExperience(xpEarned);
+              console.log(`Earned ${xpEarned} XP for manual editing`);
+              setStatusMessage(`Manual edit saved! Earned ${xpEarned} XP.`);
+
+              // Add to history
+              const stableId = isClient ? crypto.randomUUID() : `temp-${Date.now()}`;
+              const stableTimestamp = isClient ? new Date().toISOString() : new Date(0).toISOString();
+
+              setHistory((prev) => [
+                {
+                  id: stableId,
+                  name: selectedFile?.name || 'Manual Edit',
+                  timestamp: stableTimestamp,
+                  persona: 'manual',
+                  instructions: 'Manual editing with sliders',
+                  xpEarned,
+                },
+                ...prev,
+              ]);
+            } catch (error) {
+              console.warn('Failed to earn experience for manual edit:', error);
+              setStatusMessage("Manual edit saved!");
+            }
           }}
           onClose={() => setShowImageEditor(false)}
         />
