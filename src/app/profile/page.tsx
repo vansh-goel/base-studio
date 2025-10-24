@@ -12,7 +12,9 @@ import { MinimalMobileNavbar } from "@/components/MinimalMobileNavbar";
 import { contractAddresses } from "@/lib/wagmi";
 import { MEME_TOKEN_FACTORY_ABI, EXPERIENCE_NFT_ABI } from "@/lib/contracts";
 import { ExperienceNFT } from "@/components/ExperienceNFT";
+import { UserPhotoUpload } from "@/components/UserPhotoUpload";
 import { fetchUserTokens, fetchUserNFTs, type TokenInfo, type NFTInfo } from "@/lib/tokenFetcher";
+import { useUserPhoto } from "@/lib/useUserPhoto";
 import { User, Camera, Zap, Trophy, Star, TrendingUp, ArrowRight, Sparkles } from "lucide-react";
 
 const ThemeToggle = dynamic(
@@ -39,6 +41,16 @@ export default function ProfilePage() {
   const [totalXP, setTotalXP] = useState(0);
   const [totalCreations, setTotalCreations] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
+
+  // User photo management
+  const { userPhotoUrl, updateUserPhoto } = useUserPhoto();
+
+  // Debug: Log user photo URL
+  useEffect(() => {
+    console.log('Profile page - userPhotoUrl changed:', userPhotoUrl);
+    console.log('Profile page - userPhotoUrl type:', typeof userPhotoUrl);
+    console.log('Profile page - userPhotoUrl length:', userPhotoUrl?.length);
+  }, [userPhotoUrl]);
 
   // Handle client-side mounting
   useEffect(() => {
@@ -173,9 +185,12 @@ export default function ProfilePage() {
           >
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
               <div className="flex items-center gap-4 sm:gap-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl gradient-base flex items-center justify-center">
-                  <User className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                </div>
+                <UserPhotoUpload
+                  currentImageUrl={userPhotoUrl}
+                  onPhotoUpdate={updateUserPhoto}
+                  size="lg"
+                  showEditButton={true}
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
                     <h2 className="text-2xl sm:text-3xl font-bold truncate">
@@ -289,9 +304,23 @@ export default function ProfilePage() {
                         transition={{ duration: 0.4, delay: index * 0.1 }}
                         whileHover={{ y: -5 }}
                       >
-                        <div className="h-40 gradient-base-subtle flex items-center justify-center">
-                          <div className="w-20 h-20 rounded-2xl gradient-base flex items-center justify-center">
-                            <span className="text-3xl font-bold text-white">{token.symbol.slice(0, 2)}</span>
+                        <div className="h-40 relative overflow-hidden">
+                          {token.image ? (
+                            <img
+                              src={token.image}
+                              alt={token.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback to placeholder if image fails to load
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`absolute inset-0 gradient-base-subtle flex items-center justify-center ${token.image ? 'hidden' : ''}`}>
+                            <div className="w-20 h-20 rounded-2xl gradient-base flex items-center justify-center">
+                              <span className="text-3xl font-bold text-white">{token.symbol.slice(0, 2)}</span>
+                            </div>
                           </div>
                         </div>
                         <div className="p-6">
@@ -370,9 +399,23 @@ export default function ProfilePage() {
                         transition={{ duration: 0.4, delay: index * 0.1 }}
                         whileHover={{ y: -5 }}
                       >
-                        <div className="h-40 gradient-base-subtle flex items-center justify-center">
-                          <div className="w-24 h-24 rounded-2xl gradient-base flex items-center justify-center">
-                            <Trophy className="w-12 h-12 text-white" />
+                        <div className="h-40 relative overflow-hidden">
+                          {nft.image ? (
+                            <img
+                              src={nft.image}
+                              alt={`Experience NFT #${nft.tokenId}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback to placeholder if image fails to load
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`absolute inset-0 gradient-base-subtle flex items-center justify-center ${nft.image ? 'hidden' : ''}`}>
+                            <div className="w-24 h-24 rounded-2xl gradient-base flex items-center justify-center">
+                              <Trophy className="w-12 h-12 text-white" />
+                            </div>
                           </div>
                         </div>
                         <div className="p-6">

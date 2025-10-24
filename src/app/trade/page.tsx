@@ -15,6 +15,7 @@ import { INDIVIDUAL_TOKEN_ABI } from "@/lib/individualTokenABI";
 import { UniswapLiquidityManager } from "@/components/UniswapLiquidityManager";
 import { parseEther } from "viem";
 import { TrendingUp, TrendingDown, Activity, Users, Zap, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { useOnChainTrading } from '@/lib/onchainTrading';
 
 const ThemeToggle = dynamic(
   () => import("@/components/theme-toggle").then((mod) => ({ default: mod.ThemeToggle })),
@@ -41,75 +42,74 @@ export default function TradePage() {
   const [sortBy, setSortBy] = useState<"name" | "price" | "volume">("name");
   const [isHydrated, setIsHydrated] = useState(false);
 
+  // Blockchain-compliant trading system
+  const {
+    marketData,
+    isLoading: isTradingLoading,
+    isBuySuccess,
+    isSellSuccess,
+    buyTokens: executeBuy,
+    sellTokens: executeSell,
+    refetchData: refreshData,
+    buyHash,
+    sellHash,
+    userBalance,
+    contractBalance,
+    getBuyQuote,
+    getSellQuote
+  } = useOnChainTrading(selectedToken?.address || '');
+
   // Handle client-side hydration
   useEffect(() => {
     setIsHydrated(true);
   }, []);
 
-  // Write contract hooks for buy/sell
-  const { writeContract: writeBuy, data: buyHash, isPending: isBuyPending } = useWriteContract();
-  const { writeContract: writeSell, data: sellHash, isPending: isSellPending } = useWriteContract();
+  // Auto-refresh data when transaction success states change
+  useEffect(() => {
+    if (isBuySuccess || isSellSuccess) {
+      console.log('Transaction successful, refreshing data...');
+      // Refresh data after successful transaction
+      setTimeout(() => {
+        refreshData();
+        console.log('Data refreshed after transaction');
+      }, 3000); // Increased to 3 seconds to ensure transaction is mined
+    }
+  }, [isBuySuccess, isSellSuccess, refreshData]);
 
-  const { isLoading: isBuyConfirming, isSuccess: isBuySuccess } = useWaitForTransactionReceipt({
-    hash: buyHash,
-  });
+  // Additional refresh when transaction hashes are available
+  useEffect(() => {
+    if (buyHash || sellHash) {
+      console.log('Transaction hash received:', buyHash || sellHash);
+      // Wait for transaction to be mined and then refresh
+      setTimeout(() => {
+        refreshData();
+        console.log('Data refreshed after transaction hash');
+      }, 5000);
+    }
+  }, [buyHash, sellHash, refreshData]);
 
-  const { isLoading: isSellConfirming, isSuccess: isSellSuccess } = useWaitForTransactionReceipt({
-    hash: sellHash,
-  });
+  // All contract data is now handled by useOnChainTrading hook
 
-  // Fetch real token data when a token is selected
-  const { data: currentPrice } = useReadContract({
-    address: selectedToken?.address as `0x${string}`,
-    abi: INDIVIDUAL_TOKEN_ABI,
-    functionName: "getCurrentPrice",
-    query: { enabled: !!selectedToken }
-  });
-
-  const { data: contractBalance } = useReadContract({
-    address: selectedToken?.address as `0x${string}`,
-    abi: INDIVIDUAL_TOKEN_ABI,
-    functionName: "balanceOf",
-    args: selectedToken?.address ? [selectedToken.address] : undefined,
-    query: { enabled: !!selectedToken }
-  });
-
-  const { data: totalSupply } = useReadContract({
-    address: selectedToken?.address as `0x${string}`,
-    abi: INDIVIDUAL_TOKEN_ABI,
-    functionName: "totalSupply",
-    query: { enabled: !!selectedToken }
-  });
-
-  // Buy tokens function
+  // Real trading functions
   const handleBuyTokens = async () => {
     if (!selectedToken || !buyAmount) return;
-
     try {
-      await writeBuy({
-        address: selectedToken.address as `0x${string}`,
-        abi: INDIVIDUAL_TOKEN_ABI,
-        functionName: 'buyTokens',
-        value: parseEther(buyAmount),
-      });
+      console.log('Starting buy transaction...');
+      await executeBuy(buyAmount);
+      console.log('Buy transaction submitted');
     } catch (error) {
-      console.error('Error buying tokens:', error);
+      console.error('Buy transaction failed:', error);
     }
   };
 
-  // Sell tokens function
   const handleSellTokens = async () => {
     if (!selectedToken || !sellAmount) return;
-
     try {
-      await writeSell({
-        address: selectedToken.address as `0x${string}`,
-        abi: INDIVIDUAL_TOKEN_ABI,
-        functionName: 'sellTokens',
-        args: [parseEther(sellAmount)],
-      });
+      console.log('Starting sell transaction...');
+      await executeSell(sellAmount);
+      console.log('Sell transaction submitted');
     } catch (error) {
-      console.error('Error selling tokens:', error);
+      console.error('Sell transaction failed:', error);
     }
   };
 
@@ -380,6 +380,12 @@ export default function TradePage() {
                             <Activity className="w-4 h-4 text-blue-400" />
                             <span className="text-sm font-medium text-white">Active Market</span>
                           </div>
+                          {userBalance > 0 && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 backdrop-blur-sm rounded-full border border-green-400/30">
+                              <Users className="w-4 h-4 text-green-400" />
+                              <span className="text-sm font-medium text-white">Your Balance: {userBalance.toFixed(2)} {selectedToken.symbol}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -422,15 +428,17 @@ export default function TradePage() {
                                 </div>
                               </div>
                               <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-                                Estimated tokens: ~{currentPrice ? (Number(buyAmount) * Number(currentPrice) / 1e18).toFixed(2) : 'Calculating...'} {selectedToken.symbol}
+                                Estimated tokens: ~{marketData ? (Number(buyAmount) * (1 / marketData.price)).toFixed(2) : 'Calculating...'} {selectedToken.symbol}
+                                {marketData && <span className="block text-xs text-green-500">Price: {marketData.price.toFixed(6)} ETH per token</span>}
+                                {userBalance > 0 && <span className="block text-xs text-green-500">Your balance: {userBalance.toFixed(2)} {selectedToken.symbol}</span>}
                               </p>
                             </div>
                             <Button
                               className="w-full gradient-base hover:opacity-90"
                               onClick={handleBuyTokens}
-                              disabled={isBuyPending || isBuyConfirming || !selectedToken}
+                              disabled={isTradingLoading || !selectedToken}
                             >
-                              {isBuyPending || isBuyConfirming ? 'Buying...' : 'Buy Tokens'}
+                              {isTradingLoading ? 'Buying...' : 'Buy Tokens'}
                             </Button>
                           </div>
                         </motion.div>
@@ -463,16 +471,18 @@ export default function TradePage() {
                                 </div>
                               </div>
                               <p className="text-xs text-red-600 dark:text-red-400 mt-2">
-                                Estimated ETH: ~{currentPrice ? (Number(sellAmount) / (Number(currentPrice) / 1e18)).toFixed(6) : 'Calculating...'} ETH
+                                Estimated ETH: ~{marketData ? (Number(sellAmount) * marketData.price).toFixed(6) : 'Calculating...'} ETH
+                                {marketData && <span className="block text-xs text-red-500">Price: {marketData.price.toFixed(6)} ETH per token</span>}
+                                {userBalance > 0 && <span className="block text-xs text-red-500">Your balance: {userBalance.toFixed(2)} {selectedToken.symbol}</span>}
                               </p>
                             </div>
                             <Button
                               className="w-full"
                               variant="destructive"
                               onClick={handleSellTokens}
-                              disabled={isSellPending || isSellConfirming || !selectedToken}
+                              disabled={isTradingLoading || !selectedToken}
                             >
-                              {isSellPending || isSellConfirming ? 'Selling...' : 'Sell Tokens'}
+                              {isTradingLoading ? 'Selling...' : 'Sell Tokens'}
                             </Button>
                           </div>
                         </motion.div>
@@ -506,6 +516,29 @@ export default function TradePage() {
                       )}
                     </AnimatePresence>
 
+                    {/* Market Stats Header */}
+                    <motion.div
+                      className="flex items-center justify-between mb-4"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.5 }}
+                    >
+                      <h3 className="text-lg font-semibold">Market Data</h3>
+                      <Button
+                        onClick={() => {
+                          console.log('Manual refresh triggered');
+                          refreshData();
+                        }}
+                        disabled={isTradingLoading}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Activity className="w-4 h-4" />
+                        {isTradingLoading ? 'Refreshing...' : 'Refresh'}
+                      </Button>
+                    </motion.div>
+
                     {/* Market Stats */}
                     <motion.div
                       className="grid grid-cols-2 lg:grid-cols-4 gap-6"
@@ -519,36 +552,52 @@ export default function TradePage() {
                           <p className="text-sm text-muted-foreground">Current Price</p>
                         </div>
                         <p className="text-2xl font-bold">
-                          {currentPrice ? `${(Number(currentPrice) / 1e18).toFixed(6)} tokens/ETH` : 'Loading...'}
+                          {marketData ? `${marketData.price.toFixed(8)} ETH` : 'Loading...'}
                         </p>
+                        {marketData && (
+                          <p className={`text-sm ${marketData.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {marketData.priceChange24h >= 0 ? '+' : ''}{marketData.priceChange24h.toFixed(2)}% (24h)
+                          </p>
+                        )}
                       </div>
                       <div className="p-6 rounded-xl border border-border bg-card hover:shadow-lg transition-all duration-300">
                         <div className="flex items-center gap-2 mb-2">
                           <Activity className="w-4 h-4 text-blue-500" />
-                          <p className="text-sm text-muted-foreground">Contract Balance</p>
+                          <p className="text-sm text-muted-foreground">24h Volume</p>
                         </div>
                         <p className="text-2xl font-bold">
-                          {contractBalance ? `${(Number(contractBalance) / 1e18).toFixed(2)} ${selectedToken?.symbol}` : 'Loading...'}
+                          {marketData ? `${marketData.volume24h.toFixed(4)} ETH` : 'Loading...'}
                         </p>
                       </div>
                       <div className="p-6 rounded-xl border border-border bg-card hover:shadow-lg transition-all duration-300">
                         <div className="flex items-center gap-2 mb-2">
                           <Users className="w-4 h-4 text-purple-500" />
-                          <p className="text-sm text-muted-foreground">Total Supply</p>
+                          <p className="text-sm text-muted-foreground">Market Cap</p>
                         </div>
                         <p className="text-2xl font-bold">
-                          {totalSupply ? `${(Number(totalSupply) / 1e18).toFixed(0)} ${selectedToken?.symbol}` : 'Loading...'}
+                          {marketData ? `${marketData.marketCap.toFixed(4)} ETH` : 'Loading...'}
                         </p>
                       </div>
                       <div className="p-6 rounded-xl border border-border bg-card hover:shadow-lg transition-all duration-300">
                         <div className="flex items-center gap-2 mb-2">
                           <Zap className="w-4 h-4 text-yellow-500" />
-                          <p className="text-sm text-muted-foreground">ETH in Contract</p>
+                          <p className="text-sm text-muted-foreground">Liquidity</p>
                         </div>
                         <p className="text-2xl font-bold">
-                          {selectedToken ? 'Check contract balance' : 'Select token'}
+                          {contractBalance ? `${contractBalance.toFixed(0)} tokens` : 'Loading...'}
                         </p>
                       </div>
+                      {userBalance > 0 && (
+                        <div className="p-6 rounded-xl border border-border bg-card hover:shadow-lg transition-all duration-300">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Users className="w-4 h-4 text-purple-500" />
+                            <p className="text-sm text-muted-foreground">Your Balance</p>
+                          </div>
+                          <p className="text-2xl font-bold">
+                            {userBalance.toFixed(2)} {selectedToken.symbol}
+                          </p>
+                        </div>
+                      )}
                     </motion.div>
 
                     {/* Uniswap V3 Liquidity Section */}

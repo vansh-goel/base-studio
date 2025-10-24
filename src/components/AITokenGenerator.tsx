@@ -1,7 +1,7 @@
 // AI integration and token system - 2025-10-24T15:36:53.090Z
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { contractAddresses } from '@/lib/wagmi';
 import { MEME_TOKEN_FACTORY_ABI } from '@/lib/contracts';
@@ -29,11 +29,23 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
     const [metadata, setMetadata] = useState<TokenMetadata | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
 
     const { writeContract, data: hash, isPending } = useWriteContract();
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
         hash,
     });
+
+    // Detect mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+            const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+            setIsMobile(isMobileDevice);
+        };
+
+        checkMobile();
+    }, []);
 
     const generateMetadata = async () => {
         if (!imageUrl) return;
@@ -156,7 +168,7 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
             console.log('Final image URL:', finalImageUrl);
 
             // Now create the token with the real IPFS image URL
-            setStatusMessage("Creating token on blockchain...");
+            setStatusMessage("Preparing blockchain transaction...");
 
             const contractArgs = [
                 metadata.name,
@@ -171,17 +183,48 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
             console.log('Contract arguments:', contractArgs);
             console.log('Image URL being passed to contract:', finalImageUrl);
 
-            await writeContract({
+            if (isMobile) {
+                setStatusMessage("Please open your mobile wallet app and sign the transaction...");
+            } else {
+                setStatusMessage("Please sign the transaction in your wallet...");
+            }
+
+            // For mobile WalletConnect, ensure the transaction properly triggers the modal
+            if (isMobile) {
+                // Mobile-specific: Ensure WalletConnect session request is triggered
+                setStatusMessage("Triggering mobile wallet connection for transaction...");
+
+                // Small delay to ensure mobile wallet app is ready
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            const writeContractPromise = writeContract({
                 address: contractAddresses.memeTokenFactory as `0x${string}`,
                 abi: MEME_TOKEN_FACTORY_ABI,
                 functionName: 'createToken',
                 args: contractArgs,
             });
 
-            setStatusMessage("Token created successfully!");
+            await writeContractPromise;
+
+            setStatusMessage("Transaction submitted! Waiting for confirmation...");
         } catch (error) {
             console.error('Error creating token:', error);
-            setStatusMessage("Failed to create token. Please try again.");
+
+            // Better error messages for different types of failures
+            if (error instanceof Error) {
+                if (error.message.includes('User rejected') || error.message.includes('UserRejectedRequestError')) {
+                    setStatusMessage("Transaction cancelled by user. Please try again.");
+                } else if (error.message.includes('insufficient funds')) {
+                    setStatusMessage("Insufficient funds for transaction. Please add ETH to your wallet.");
+                } else if (error.message.includes('network')) {
+                    setStatusMessage("Network error. Please check your connection and try again.");
+                } else {
+                    setStatusMessage(`Failed to create token: ${error.message}`);
+                }
+            } else {
+                setStatusMessage("Failed to create token. Please try again.");
+            }
         }
     };
 
@@ -193,21 +236,53 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
         });
     };
 
+    // Show transaction status
+    if (hash && !isSuccess) {
+        return (
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-blue-800 dark:text-blue-200 font-medium mb-2">
+                    {isConfirming ? 'Confirming Transaction...' : 'Transaction Submitted'}
+                </p>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+                    {isConfirming
+                        ? (isMobile
+                            ? 'Please wait while your transaction is being confirmed on the blockchain. You can check your wallet app for updates.'
+                            : 'Please wait while your transaction is being confirmed on the blockchain.'
+                        )
+                        : (isMobile
+                            ? 'Your transaction has been submitted. Please check your mobile wallet app for confirmation status.'
+                            : 'Your transaction has been submitted. Waiting for confirmation...'
+                        )
+                    }
+                </p>
+                <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => window.open(`https://sepolia.basescan.org/tx/${hash}`, '_blank')}>
+                        View Transaction
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     if (isSuccess && hash) {
         // Call the onTokenCreated callback with the token address
         // In a real implementation, you would get the token address from the transaction receipt
         const simulatedTokenAddress = `0x${hash.slice(2, 42)}`;
 
         return (
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                 <p className="text-green-800 dark:text-green-200 font-medium mb-2">
-                    Token created successfully!
+                    ✅ Token Created Successfully!
                 </p>
                 <p className="text-sm text-green-700 dark:text-green-300 mb-4">
-                    Your meme token has been deployed to the blockchain.
+                    Your meme token has been deployed to the blockchain and is now live.
                 </p>
                 <div className="flex gap-2">
-                    <Button size="sm" onClick={() => onTokenCreated?.(simulatedTokenAddress)}>
+                    <Button size="sm" onClick={() => {
+                        onTokenCreated?.(simulatedTokenAddress);
+                        // Navigate to trade page to view the token
+                        window.location.href = '/trade';
+                    }}>
                         View Token
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => window.open(`https://sepolia.basescan.org/tx/${hash}`, '_blank')}>
@@ -352,9 +427,14 @@ export function AITokenGenerator({ imageUrl, onTokenCreated }: AITokenGeneratorP
                             disabled={isPending || isConfirming}
                             className="flex-1"
                         >
-                            {isPending || isConfirming ? 'Creating...' : 'Create Token'}
+                            {isPending ? 'Preparing Transaction...' : isConfirming ? 'Confirming...' : 'Create Token'}
                         </Button>
-                        <Button variant="outline" onClick={() => setIsEditing(true)} className="flex-1">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsEditing(true)}
+                            className="flex-1"
+                            disabled={isPending || isConfirming}
+                        >
                             Edit Metadata
                         </Button>
                     </div>

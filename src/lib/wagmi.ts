@@ -73,6 +73,14 @@ export const config = createConfig({
                 description: 'AI-powered photo studio on Base',
                 url: typeof window !== 'undefined' ? window.location.origin : 'https://base-photo-studio.vercel.app',
                 icons: ['https://base-photo-studio.vercel.app/favicon.ico']
+            },
+            // Enhanced mobile transaction handling
+            showQrModal: true,
+            qrModalOptions: {
+                themeMode: 'light',
+                themeVariables: {
+                    '--wcm-z-index': '1000'
+                }
             }
         }),
     ],

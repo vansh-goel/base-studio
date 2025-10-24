@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,6 +9,7 @@ import { SimpleWalletConnect } from './SimpleWalletConnect';
 import { ThemeToggle } from './theme-toggle';
 import { useDisconnect } from 'wagmi';
 import { LogOut } from 'lucide-react';
+import { useUserPhoto } from '@/lib/useUserPhoto';
 
 interface MinimalMobileNavbarProps {
     currentPage?: string;
@@ -19,6 +20,14 @@ export function MinimalMobileNavbar({ currentPage = 'studio' }: MinimalMobileNav
     const { isConnected } = useAccount();
     const { disconnect } = useDisconnect();
     const router = useRouter();
+    const { userPhotoUrl } = useUserPhoto();
+
+    // Debug: Log user photo URL
+    useEffect(() => {
+        console.log('Navbar - userPhotoUrl changed:', userPhotoUrl);
+        console.log('Navbar - userPhotoUrl type:', typeof userPhotoUrl);
+        console.log('Navbar - userPhotoUrl length:', userPhotoUrl?.length);
+    }, [userPhotoUrl]);
 
     const navItems = [
         { name: 'Studio', href: '/studio', icon: Camera, current: currentPage === 'studio' },
@@ -38,9 +47,19 @@ export function MinimalMobileNavbar({ currentPage = 'studio' }: MinimalMobileNav
                 <div className="flex items-center justify-between px-3 py-2">
                     {/* Logo - Minimal */}
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full gradient-base flex items-center justify-center">
-                            <span className="text-white font-bold text-xs">BS</span>
-                        </div>
+                        {userPhotoUrl ? (
+                            <div className="w-6 h-6 rounded-full overflow-hidden border border-[var(--border)]">
+                                <img
+                                    src={userPhotoUrl}
+                                    alt="Profile"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        ) : (
+                            <div className="w-6 h-6 rounded-full gradient-base flex items-center justify-center">
+                                <span className="text-white font-bold text-xs">BS</span>
+                            </div>
+                        )}
                         <h1 className="text-sm font-semibold">Base Studio</h1>
                     </div>
 
@@ -120,9 +139,19 @@ export function MinimalMobileNavbar({ currentPage = 'studio' }: MinimalMobileNav
             <header className="hidden lg:block border-b border-[var(--border)] bg-[var(--background)]">
                 <div className="container mx-auto flex justify-between items-center py-3 px-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full gradient-base flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">BS</span>
-                        </div>
+                        {userPhotoUrl ? (
+                            <div className="w-8 h-8 rounded-full overflow-hidden border border-[var(--border)]">
+                                <img
+                                    src={userPhotoUrl}
+                                    alt="Profile"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        ) : (
+                            <div className="w-8 h-8 rounded-full gradient-base flex items-center justify-center">
+                                <span className="text-white font-bold text-sm">BS</span>
+                            </div>
+                        )}
                         <h1 className="text-xl font-semibold">Base Studio</h1>
                     </div>
                     <div className="flex items-center gap-4">
